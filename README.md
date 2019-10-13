@@ -22,7 +22,7 @@ attributes.
 * Password: minLength, maxLength and their respective message attributes.
 
 ### Example JSON
-```json
+```jsonc
 {
    "numberElement": { <- The parent key can have any name that you want, the important parts are under them.
        "class": "numberElement", <- This is the lookup class, xValidate will go through all the elements that contain this class.
