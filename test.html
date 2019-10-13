@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>xValidate Test</title>
+</head>
+<body>
+    <form>
+        <div class="form-group">
+            <input class = "textElement" type = "text" name = "textElement" id = "textElement" />
+        </div>
+        <div class="form-group">
+            <input class = "emailElement" type = "email" name = "emailElement" id = "emailElement" />
+        </div>
+        <div class="form-group">
+            <input class = "numberElement" type = "number" name = "numberElement" id = "numberElement" />
+        </div>
+        <div class="form-group">
+            <input class = "passwordElement" type = "password" name = "passwordElement" id = "passwordElement" />
+        </div>
+        <button id = "testButton" type = "button">Test!</button>
+        <button onclick = "clearErrorElements();" type="button">Clear error fields</button>
+    </form>
+    <p>The first element is a textElement that is not required, but if it's not null, it requires a 5 minLength and has a 25 maxLength.</p>
+    <p>The second element is an emailElement that is required and has a 6 max char length.</p>
+    <p>The third element is a numberElement that is required and has a minimum of 6 characters.</p>
+    <p>The fourth element is a passwordElement that is not required and has a minimum of 6 characters, and a max length of 35 characters.</p>
+</body>
+<style>
+
+    body {
+        font-family: sans-serif;
+    }
+
+    form {
+        margin: 0px auto;
+    }
+
+    .form-group {
+        display: block;
+    }
+
+    .forum-group input {
+        display: block;
+    }
+
+</style>
+<script src = "xValidate.js" type = "text/javascript"></script>
+<script src = "xValidateTest.js" type = "text/javascript"></script>
+</html>
