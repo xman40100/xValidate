@@ -1,5 +1,6 @@
+"use strict";
 /*
- * ----------------------------- xValidate 0.1 -------------------------------------------
+ * ----------------------------- xValidate 0.2 -------------------------------------------
  * This is xValidate: xValidate is a native JavaScript validation, the main premise of this
  * script file is to make it easy for the developers to validate input fields.
  * Another point is to keep it simple. No need to make a huge dependency or something, just
@@ -14,192 +15,247 @@
  * the HTMLElement's ID... and that's pretty much it!
  * 
  * ------------ Element properties ------------
- * - Text, number: required, minLength, maxLength and their respective message
+ * - Text, password, search: required, minlength, maxlength and their respective message
  * attributes.
- * - Email: required, maxLength and their respective message attributes.
- * - Password: minLength, maxLength and their respective message attributes.
+ * - Email: same as text type, forceEmailValidation and their respective message attributes.
  *  ----------------------- Example JSON -----------------------
- * let jsonObject = {
- *    numberElement: { <- The parent key can have any name that you want, the important parts are under them.
- *        class: "numberElement", <- This is the lookup class, xValidate will go through all the elements that contain this class.
- *        properties: { <- The properties object. You are able to define the following properties.
- *            required: false, <- Can be provided or not. Defaults to false if not provided.
- *            minLength: 5, <- Can be provided or not. The element won't have a minimum length if not provided.
- *            maxLength: 25 <- Can be provided or not. The element won't have a maximum length if not provided.
- *        },
- *        messages: { <- The messages object. You are able to configure custom messages for the properties defined above.
- *            required: "This element is required.",
- *            minLength: "This element requires to have at least 5 characters.",
- *            maxLength: "This element has a max of 25 characters."
- *        }
- *    },
- *    emailElement: {
- *        id: "emailElement",
- *        properties: {
- *            required: true,
- *            validateMail: true,
- *            maxLength: 6
- *        },
- *        messages: {
- *            required: "This element is required.",
- *            maxLength: "This element has a max of 6 characters.",
- *            validateMail: "You haven't provided a valid email.",
- *        }
- *    }
- * };
+ * {
+ *       "settings": {
+ *           "classError": "xValidateError", <- Error class for the UI error elements that indicate whether they are valid or not. Not defined equals to xValidateError
+ *           "styleErrorClass": "xValidateStyleError", <- Style class for the input elements that will indicate their validity or not. Not defined equals to xValidateStyleError
+ *           "sendOnValidated": false, <- Boolean that indicates whether the form should be sent after validation or not. Not defined equals to false.
+ *           "form": document.getElementById("form") <- Form ID that will be sent. If not defined, and sendOnValidated == true, xValidate will traverse the DOM and send it.
+ *       },
+ *       "elements": [ <- Element array, it contains all the properties, messages and the class or id that will be validated.
+ *           {
+ *               "id": "textElement", <- Name of the element that will be validated, can be an id or a class name, but cannot be both.
+ *               "properties": { <- Properties attribute. Required.
+ *                   "required": true, <- Required property, if not defined, default to false.
+ *                   "maxlength": 35, <- Max length property, if not defined, unlimited.
+ *                   "minlength": 6, <- Min length property, if not defined, no minimum chars.
+ *               },
+ *               "messages": { <- The messages for the properties. If one of them is missing, xValidate will use a default one.
+ *                   "required": "This field is required",
+ *                   "maxlength": "This element has a max of 35 characters.",
+ *                   "minlength": "This element has a minimum of 6 characters."
+ *               }
+ *           },
+ *           {
+ *               "class": "emailElement",
+ *               "properties": {
+ *                   "required": true,
+ *                   "forceEmailValidation": true, <- Unique for email type only, forces regex validation for emails.
+ *                   "maxlength": 35,
+ *                   "minlength": 6,
+ *               },
+ *               "messages": {
+ *                   "maxlength": "This element has a max of 35 characters.",
+ *                   "minlength": "This element has a minimum of 6 characters."
+ *               }
+ *           },
+ *           {
+ *               "id": "numberElement",
+ *               "properties": {
+ *                   "required": false,
+ *                   "maxlength": 35,
+ *                   "minlength": 6,
+ *               },
+ *               "messages": {
+ *                   "maxlength": "This element has a max of 35 characters.",
+ *                   "minlength": "This element has a minimum of 6 characters."
+ *               }
+ *           }
+ *       ]
+ *   }
  */
 
- /**
-  * This method allows the validation of elements using a JSON object.
-  * @param {Object} jsonRules The rules of validation parsed as a JSON.
-  * @param {boolean} sendOnValidated Boolean declaring if the default submit event should be cancelled.
-  * @param {string} errorClass Error class that you may want to add to notify the user of validation errors.
-  * @returns {boolean} Returns a boolean indicating if all the validations were successful.
-  */
-function xValidate(jsonRules, sendOnValidated = false, errorClass = null) {
-    let correctlyValidated = true;//This variable changes depending if at least one element is not corrected according to the provided rules.
-    //The DOM should be reset of all the validation errors if it contains any.
-    Array.from(document.querySelectorAll(".xValidateError")).forEach((element) => {
-        if(errorClass != null) element.classList.remove(errorClass);
-        else {
-            element.style.color = "initial";
-            element.style.oulineColor = "initial";
+/**
+ * This method allows the validation of elements using a JSON.
+ * @param {Object} jsonRules Ruleset that will be used to validate the elements.
+ */
+function xValidate(jsonRules) {
+    let correctlyValidated = true;//This variable changes depending if at least one element is not corrected according to the provided rules inside the elements property.
+    let settings = jsonRules.settings;
+    let elements = jsonRules.elements;
+
+    let errorClass = settings.classError != undefined ? settings.classError : "xValidateError";
+    let errorElements = document.getElementsByClassName(errorClass);
+    for(let i = 0 ; i < errorElements.length ; i++) {
+        let errorElement = errorElements.item(i);
+        errorElement.remove();
+    }
+
+    if(settings.styleErrorClass != undefined && settings.styleErrorClass !== "xValidateStyleError") {
+        let styledInputs = document.getElementsByClassName(settings.styleErrorClass);
+        for(let i = 0 ; i < styledInputs.length ; i++) {
+            let input = styledInputs.item(i);
+            input.classList.remove(settings.styleErrorClass);
         }
-        element.remove();
+    }
+    else {
+        let styledInputs = document.getElementsByClassName("xValidateStyleError");
+        for(let i = 0 ; i < styledInputs.length ; i++) {
+            let input = styledInputs.item(i);
+            input.style.color = "initial";
+            input.style.borderColor = "initial";
+            input.classList.remove(settings.styleErrorClass);
+        }
+    }
+
+    elements.forEach((element, index) => {
+        if(element.id == undefined && element.class == undefined) {
+            console.error("xValidate error - Error at element of index " + index + ": id or class properties not implemented. Please write the element's class or id.");
+            return false;
+        }
+        if(element.id != undefined && element.class != undefined) {
+            console.error("xValidate error - Error at element of index " + index + ": id and class properties are both implemented. Please remove one of the properties.");
+            return false;
+        }
+
+        let lookupSymbol = element.id != undefined ? element.id : element.class;
+        if(element.id != undefined) {
+            let htmlElement = document.getElementById(lookupSymbol);
+            validateElement(htmlElement, element);
+        }
+        else {
+            let htmlElements = document.getElementsByClassName(lookupSymbol);
+            for(let i = 0 ; i < htmlElements.length ; i++) validateElement(htmlElements.item(i), element);
+        }
     });
 
-    for(let key of Object.keys(jsonRules)) {
-        //The lookup symbol will be assigned depending if the class or the id properties are defined.
-        if(jsonRules[key].class == undefined && jsonRules[key].id == undefined) {
-            console.error("xValidate error: class or id properties are not defined in the rules.");
-            return false;
-        }
-        if(jsonRules[key].class != undefined && jsonRules[key].id != undefined) {
-            console.error("xValidate error: Both class and id properties are defined. Please delete one of them from the rules.");
-            return false;
-        }
-        let lookupSymbol = (jsonRules[key].class != undefined) ? "." + jsonRules[key].class : "#" + jsonRules[key].id;
-        //xValidate will find all the class and id elements that match...
-        let htmlArray = Array.from(document.querySelectorAll(lookupSymbol));
-        //Then iterate over them.
-        htmlArray.forEach((htmlInput) => {
-            //If the ID or class match...
-            if(htmlInput.id === lookupSymbol.substr(1) || htmlInput.classList.contains(lookupSymbol.substr(1))) {
-                if(htmlInput.getAttribute("type") === "text" || htmlInput.getAttribute("type") === "password" || htmlInput.getAttribute("type") === "number") {
-                    if(jsonRules[key].properties.required != undefined) {
-                        if(htmlInput.value.length === 0) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.required != undefined ? jsonRules[key].messages.required : "This field is required.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-
-                    else if(jsonRules[key].properties.maxLength != undefined) {
-                        if(htmlInput.value.length > jsonRules[key].properties.maxLength) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.maxLength != undefined ? jsonRules[key].messages.maxLength : "You have reached the max length of this input field.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-
-                    else if(jsonRules[key].properties.minLength != undefined) {
-                        if(htmlInput.value.length < jsonRules[key].properties.minLength) {
-                            console.log("entered here for " + key + " - minLength");
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.minLength != undefined ? jsonRules[key].messages.minLength : "This input requires a minimal amount of characters.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-                }
-
-                if(htmlInput.getAttribute("type") === "email") {
-                    
-                    if(jsonRules[key].properties.required != undefined) {
-                        if(htmlInput.value.length === 0) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.required != undefined ? jsonRules[key].messages.required : "This field is required.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-
-                    else if(!htmlInput.value.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-                        let errorElement = document.createElement("span");
-                        errorElement.innerHTML = jsonRules[key].messages.validateMail != undefined ? jsonRules[key].messages.validateMail : "You have not provided a valid email.";
-                        addErrorClass(errorElement, errorClass);
-                        htmlInput.parentElement.appendChild(errorElement);
-                        correctlyValidated = false;
-                    }
-
-                    else if(jsonRules[key].properties.minLength != undefined) {
-                        if(htmlInput.value.length > jsonRules[key].properties.minLength) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.minLength != undefined ? jsonRules[key].messages.minLength : "You have reached the max length of this field.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-
-                    else if(jsonRules[key].properties.maxLength != undefined) {
-                        if(htmlInput.value.length > jsonRules[key].properties.maxLength) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.maxLength != undefined ? jsonRules[key].messages.maxLength : "You have reached the max length of this field.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-                }
-
-                if(htmlInput.getAttribute("type") === "password") {
-                    
-                    if(jsonRules[key].properties.minLength != undefined) {
-                        if(htmlInput.value.length < jsonRules[key].properties.minLength) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.minLength != undefined ? jsonRules[key].messages.minLength : "You have to provide a minimum amount of characters.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-
-                    else if(jsonRules[key].properties.maxLength != undefined) {
-                        if(htmlInput.value.length > jsonRules[key].properties.maxLength) {
-                            let errorElement = document.createElement("span");
-                            errorElement.innerHTML = jsonRules[key].messages.maxLength != undefined ? jsonRules[key].messages.maxLength : "You have reached the max length of this field.";
-                            addErrorClass(errorElement, errorClass);
-                            htmlInput.parentElement.appendChild(errorElement);
-                            correctlyValidated = false;
-                        }
-                    }
-                }
+    if(settings.sendOnValidated != undefined) {
+        if(settings.sendOnValidated) {
+            if(settings.form != undefined ) settings.form.submit();
+            else {
+                let lookup = "";
+                if(elements[0].id != undefined) lookup = "#" + elements[0].id;
+                else lookup = "." + elements[0].class;
+                document.querySelector(lookup).parentElement().submit();
             }
-        });
-    }
-    if(correctlyValidated) {
-        if(sendOnValidated) htmlArray[0].parentElement.submit();
+        }
     }
     return correctlyValidated;
 }
 
 /**
- * Internal class. addErrorClass adds the error class for the input fields.
+ * Internal method of xValidate. styleErrorClass adds the error class for the input fields.
  * @param {HTMLElement} element Element to add the error class.
  * @param {string} errorClass Error class to be added. If it's not provided, then it'll default to xValidate custom inline error CSS.
+ * @param {string} validateErrorClass Validation error class to be added. This class is used to indicate later to xValidate to clear all error elements. Default to xValidateError.
  */
-function addErrorClass(element, errorClass = null) {
-    if(errorClass) element.classList.add(errorClass);
+function styleErrorClass(element, validateErrorClass = null) {
+    if(validateErrorClass != null) element.classList.add(validateErrorClass);
     else {
+        element.classList.add("xValidateStyleError");
         element.style.color = "red";
-        element.style.oulineColor = "red";
+        element.style.borderColor = "red";
     }
-    element.classList.add("xValidateError");
+}
+
+/**
+ * Internal method of xValidate. validateElement makes the validation process for the passed element, 
+ * redirecting it to other methods used for various types.
+ * @param {HTMLInputElement} htmlElement Element to be validated.
+ */
+function validateElement(htmlElement, elementRules, errorClass = "xValidateError") {
+    let type = htmlElement.type;
+    let validation = null;
+    let errorMessage = "";
+    switch(type) {
+        case "text":
+        case "password":
+        case "search":
+            validation = validateInput(htmlElement, elementRules);
+            break;
+        case "email":
+            //To validate if the value is an email, use the forceEmailValidation property
+            validation = validateEmail(htmlElement, elementRules);
+            break;
+    }
+
+    if(validation != null && validation.errors.length !== 0) {
+        validation.errors.forEach((error) => {
+            errorMessage = errorMessage + error + "<br/>";
+        });
+        createErrorElement(htmlElement, errorMessage, errorClass);
+    }
+}
+
+/**
+ * Internal method of xValidate. This is the general input validation.
+ * @param {HTMLInputElement} htmlInputElement Element to be validated.
+ * @param {Object} elementRules Element rules to be checked.
+ */
+function validateInput(htmlInputElement, elementRules) {
+    let validated = true;
+    let errors = [];
+
+    if(elementRules.properties.required != undefined) {
+        if(elementRules.properties.required) {
+            if(htmlInputElement.value.length === 0) {
+                validated = false;
+                let message = elementRules.messages.required != undefined ? elementRules.messages.required : "This field is required";
+                errors.push(message);
+            }
+        }
+    }
+
+    if(elementRules.properties.maxlength != undefined) {
+        if(htmlInputElement.value.length > elementRules.properties.maxlength) {
+            validated = false;
+            let message = elementRules.messages.maxlength != undefined ? elementRules.messages.maxlength : "This field has reached the " + elementRules.properties.maxlength + " character limit.";
+            errors.push(message);
+        }
+    }
+
+    if(elementRules.properties.minlength != undefined) {
+        if(htmlInputElement.value.length < elementRules.properties.minlength) {
+            validated = false;
+            let message = elementRules.messages.minlength != undefined ? elementRules.messages.minlength : "This field has not reached the " + elementRules.properties.minlength + " minimum character(s).";
+            errors.push(message);
+        }
+    }
+
+    return {
+        "validated": validated,
+        "errors": errors
+    };
+}
+
+/**
+ * 
+ * @param {HTMLInputElement} htmlInputElement The HTML Element that will be validated.
+ * @param {OBject} elementRules Element rules.
+ * @param {string} errorClass 
+ */
+function validateEmail(htmlInputElement, elementRules) {
+    let inputValidation = validateInput(htmlInputElement, elementRules);
+    let currentVal = htmlInputElement.value;
+
+    if(elementRules.properties.forceEmailValidation != undefined) {
+        if(elementRules.properties.forceEmailValidation) {
+            if(!currentVal.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+                let message = elementRules.messages.email != undefined ? elementRules.messages.email : "Please enter a valid email.";
+                inputValidation.validated = false;
+                inputValidation.errors.push(message);
+            }
+        }
+    }
+
+    return inputValidation;
+}
+
+/**
+ * Internal method that will create an error element and style the html element that will be passed.
+ * @param {HTMLInputElement} htmlInputElement HTML element that the error element will be appended to.
+ * @param {string} message Message that will be appended.
+ * @param {string} errorClass The error class that xValidate will use to later remove.
+ * @param {string} htmlErrorClass The error class that will be added to the input element. If not defined, it'll default to inline styling.
+ */
+function createErrorElement(htmlInputElement, message, errorClass, htmlErrorClass = null) {
+    let errorElement = document.createElement("span");
+    errorElement.classList.add(errorClass);
+    errorElement.innerHTML = message;
+    styleErrorClass(htmlInputElement, htmlErrorClass);
+    htmlInputElement.parentElement.appendChild(errorElement);
 }

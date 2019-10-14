@@ -1,72 +1,56 @@
-/**
- * You can use this script to test the functionality of xValidate.
- */
+// import {xValidate} from "./xValidate2.js";
 
-//We create a JSONObject...
 let jsonObject = {
-    "textElement": {
-        "id": "textElement",
-        "properties": {
-            "required": false,
-            "minLength": 5,
-            "maxLength": 25
-        },
-        "messages": {
-            "required": "This element is required.",
-            "minLength": "This element requires to have at least 5 characters.",
-            "maxLength": "This element has a max of 25 characters."
-        }
+    "settings": {
+        "classError": "xValidateError",
+        "styleErrorClass": "xValidateStyleError",
+        "sendOnValidated": false,
+        "form": document.getElementById("form")
     },
-    "numberElement": {
-        "class": "numberElement",
-        "properties": {
-            "required": false,
-            "minLength": 5,
-            "maxLength": 25
+    "elements": [
+        {
+            "id": "textElement",
+            "properties": {
+                "required": true,
+                "maxlength": 35,
+                "minlength": 6,
+            },
+            "messages": {
+                "required": "This field is required",
+                "maxlength": "This element has a max of 35 characters.",
+                "minlength": "This element has a minimum of 6 characters."
+            }
         },
-        "messages": {
-            "required": "This element is required.",
-            "minLength": "This element requires to have at least 5 characters.",
-            "maxLength": "This element has a max of 25 characters."
-        }
-    },
-    "emailElement": {
-        "class": "emailElement",
-        "properties": {
-            "required": true,
-            "maxLength": 6
+        {
+            "class": "emailElement",
+            "properties": {
+                "required": true,
+                "forceEmailValidation": true,
+                "maxlength": 35,
+                "minlength": 6,
+            },
+            "messages": {
+                "maxlength": "This element has a max of 35 characters.",
+                "minlength": "This element has a minimum of 6 characters."
+            }
         },
-        "messages": {
-            "required": "This element is required.",
-            "maxLength": "This element has a max of 6 characters."
+        {
+            "id": "numberElement",
+            "properties": {
+                "required": false,
+                "maxlength": 35,
+                "minlength": 6,
+            },
+            "messages": {
+                "maxlength": "This element has a max of 35 characters.",
+                "minlength": "This element has a minimum of 6 characters."
+            }
         }
-    },
-    "numberElement": {
-        "id": "numberElement",
-        "properties": {
-            "required": true,
-            "minLength": 6
-        },
-        "messages": {
-            "required": "This element is required.",
-            "minLength": "This element has a minimium of 6 characters."
-        }
-    },
-    "passwordElement": {
-        "id": "passwordElement",
-        "properties": {
-            "maxLength": 35,
-            "minLength": 6
-        },
-        "messages": {
-            "maxLength": "This password field has a max length of 35 characters.",
-            "minLength": "This password field has a min length of 6 characters."
-        }
-    } 
+    ]
 };
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("testButton").addEventListener("click", () => {
-        xValidate(jsonObject);
+        new xValidate(jsonObject);
     });
 });
