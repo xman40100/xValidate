@@ -84,7 +84,7 @@ xValidate(jsonRules);
 ```
 
 #### Arguments
-* jsonRules: This is the main object that will be used to validate the element. You can have *n* elements in the object, but each one has to contain the properties specified above, like ```properties```, ```id/class```, ```messages```.
+* jsonRules: This is the main object that will be used to validate the element. Following the upper example of the JSON used in xValidate, you can have *n* elements in the ```elements``` property, but you must have the ```settings``` and ```elements``` properties in order for it to work.
 
 #### Return value
 The return value is a boolean indicating if there were the any validation errors. ```true``` if there was no validation errors, ```false``` if there are validation errors.
