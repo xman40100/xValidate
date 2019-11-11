@@ -1,4 +1,4 @@
-# xValidate 0.2
+# xValidate 0.2.1
 ```html
 <script src = "xValidate.min.js"></script>
 ```
@@ -97,4 +97,4 @@ The return value is a boolean indicating if there were the any validation errors
 
 ### Credits
 
-Credits to the (Zenbase Email regex)[https://emailregex.com/]
+Credits to the [Zenbase Email regex](https://emailregex.com/)
