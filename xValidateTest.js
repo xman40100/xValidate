@@ -38,12 +38,9 @@ let jsonObject = {
             "id": "numberElement",
             "properties": {
                 "required": false,
-                "maxlength": 35,
-                "minlength": 6,
-            },
-            "messages": {
-                "maxlength": "This element has a max of 35 characters.",
-                "minlength": "This element has a minimum of 6 characters."
+                "max": 35,
+                "min": 6,
+                "numberType": "natural"
             }
         }
     ]

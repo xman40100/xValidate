@@ -15,9 +15,13 @@ xValidate requires the following:
 You only need to use one function, passing a JSON that contains the rules to validate and
 the HTMLElement's ID or class... and that's pretty much it!
 
+The message property of the JSON passed can be defined or undefined, xValidate has defaults
+in case you don't want to write the messages, and will use the properties to write those messages.
+
 ### Element properties
 * Text, password, search: required, minlength, maxlength and their respective message attributes.
 * Email: same as text type, forceEmailValidation and their respective message attributes.
+* Number: required, min, max, numberType and their respective message attributes.
 
 ### Settings properties
 * ```classError```: Error class for the UI error elements that indicate whether they are valid or not. If not defined, it will use the class "xValidateError" by default.
@@ -64,12 +68,14 @@ the HTMLElement's ID or class... and that's pretty much it!
                "id": "numberElement",
                "properties": {
                    "required": false,
-                   "maxlength": 35,
-                   "minlength": 6,
+                   "min": 42, //Unique for number type only. Checks for min value of the number.
+                   "max": 256, //Unique for number type only. Checks for max value of the number.
+                   "numberType": "natural" //Unique for number type only. Forces regex validation depending of type, which can be: 
+                   //int/integer, float/decimal or anything, which would default to a natural number
                },
                "messages": {
-                   "maxlength": "This element has a max of 35 characters.",
-                   "minlength": "This element has a minimum of 6 characters."
+                   "min": "The current value is less than 42",
+                   "max": "The current value is greater than 256"
                }
            }
        ]
@@ -88,3 +94,7 @@ xValidate(jsonRules);
 
 #### Return value
 The return value is a boolean indicating if there were the any validation errors. ```true``` if there was no validation errors, ```false``` if there are validation errors.
+
+### Credits
+
+Credits to the (Zenbase Email regex)[https://emailregex.com/]

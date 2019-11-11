@@ -57,17 +57,20 @@
  *               "id": "numberElement",
  *               "properties": {
  *                   "required": false,
- *                   "maxlength": 35,
- *                   "minlength": 6,
+ *                   "numberType": "natural" <- Its type can be natural, int/integer or float/decimal
+ *                   "min": 35,
+ *                   "max": 6,
  *               },
  *               "messages": {
- *                   "maxlength": "This element has a max of 35 characters.",
- *                   "minlength": "This element has a minimum of 6 characters."
+ *                   "min": "This element has a max of 35 characters.",
+ *                   "max": "This element has a minimum of 6 characters."
  *               }
  *           }
  *       ]
  *   }
  */
+
+let xValidateCurrentErrors = [];
 
 /**
  * This method allows the validation of elements using a JSON.
@@ -79,11 +82,9 @@ function xValidate(jsonRules) {
     let elements = jsonRules.elements;
 
     let errorClass = settings.classError != undefined ? settings.classError : "xValidateError";
-    let errorElements = document.getElementsByClassName(errorClass);
-    for(let i = 0 ; i < errorElements.length ; i++) {
-        let errorElement = errorElements.item(i);
-        errorElement.remove();
-    }
+    document.querySelectorAll("." + errorClass).forEach(function(element) {
+        element.remove();
+    });
 
     if(settings.styleErrorClass != undefined && settings.styleErrorClass !== "xValidateStyleError") {
         let styledInputs = document.getElementsByClassName(settings.styleErrorClass);
@@ -102,7 +103,7 @@ function xValidate(jsonRules) {
         }
     }
 
-    elements.forEach((element, index) => {
+    elements.forEach(function(element, index) {
         if(element.id == undefined && element.class == undefined) {
             console.error("xValidate error - Error at element of index " + index + ": id or class properties not implemented. Please write the element's class or id.");
             return false;
@@ -123,18 +124,17 @@ function xValidate(jsonRules) {
         }
     });
 
-    if(settings.sendOnValidated != undefined) {
-        if(settings.sendOnValidated) {
-            if(settings.form != undefined ) settings.form.submit();
-            else {
-                let lookup = "";
-                if(elements[0].id != undefined) lookup = "#" + elements[0].id;
-                else lookup = "." + elements[0].class;
-                document.querySelector(lookup).parentElement().submit();
-            }
+    if(settings.sendOnValidated == undefined) return correctlyValidated;
+
+    if(settings.sendOnValidated) {
+        if(settings.form != undefined ) settings.form.submit();
+        else {
+            let lookup = "";
+            if(elements[0].id != undefined) lookup = "#" + elements[0].id;
+            else lookup = "." + elements[0].class;
+            document.querySelector(lookup).parentElement().submit();
         }
     }
-    return correctlyValidated;
 }
 
 /**
@@ -162,19 +162,20 @@ function validateElement(htmlElement, elementRules, errorClass = "xValidateError
     let validation = null;
     let errorMessage = "";
     switch(type) {
-        case "text":
-        case "password":
-        case "search":
-            validation = validateInput(htmlElement, elementRules);
-            break;
         case "email":
             //To validate if the value is an email, use the forceEmailValidation property
             validation = validateEmail(htmlElement, elementRules);
             break;
+        case "number":
+            validation = validateNumber(htmlElement, elementRules);
+            break;
+        default:
+            validation = validateInput(htmlElement, elementRules);
+            break;
     }
 
     if(validation != null && validation.errors.length !== 0) {
-        validation.errors.forEach((error) => {
+        validation.errors.forEach(function(error) {
             errorMessage = errorMessage + error + "<br/>";
         });
         createErrorElement(htmlElement, errorMessage, errorClass);
@@ -194,7 +195,8 @@ function validateInput(htmlInputElement, elementRules) {
         if(elementRules.properties.required) {
             if(htmlInputElement.value.length === 0) {
                 validated = false;
-                let message = elementRules.messages.required != undefined ? elementRules.messages.required : "This field is required";
+                let message = getValidationErrorMessage(elementRules, "required");
+                message = message != null ? message : "This field is required";
                 errors.push(message);
             }
         }
@@ -203,7 +205,8 @@ function validateInput(htmlInputElement, elementRules) {
     if(elementRules.properties.maxlength != undefined) {
         if(htmlInputElement.value.length > elementRules.properties.maxlength) {
             validated = false;
-            let message = elementRules.messages.maxlength != undefined ? elementRules.messages.maxlength : "This field has reached the " + elementRules.properties.maxlength + " character limit.";
+            let message = getValidationErrorMessage(elementRules, "min");
+            message = message != null ? message : "This field has reached the " + elementRules.properties.maxlength + " character limit.";
             errors.push(message);
         }
     }
@@ -211,7 +214,8 @@ function validateInput(htmlInputElement, elementRules) {
     if(elementRules.properties.minlength != undefined) {
         if(htmlInputElement.value.length < elementRules.properties.minlength) {
             validated = false;
-            let message = elementRules.messages.minlength != undefined ? elementRules.messages.minlength : "This field has not reached the " + elementRules.properties.minlength + " minimum character(s).";
+            let message = getValidationErrorMessage(elementRules, "minlength");
+            message = message != null ? message : "This field has not reached the " + elementRules.properties.minlength + " minimum character(s).";
             errors.push(message);
         }
     }
@@ -226,7 +230,6 @@ function validateInput(htmlInputElement, elementRules) {
  * 
  * @param {HTMLInputElement} htmlInputElement The HTML Element that will be validated.
  * @param {OBject} elementRules Element rules.
- * @param {string} errorClass 
  */
 function validateEmail(htmlInputElement, elementRules) {
     let inputValidation = validateInput(htmlInputElement, elementRules);
@@ -234,8 +237,10 @@ function validateEmail(htmlInputElement, elementRules) {
 
     if(elementRules.properties.forceEmailValidation != undefined) {
         if(elementRules.properties.forceEmailValidation) {
+            //Credit to https://emailregex.com/
             if(!currentVal.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-                let message = elementRules.messages.email != undefined ? elementRules.messages.email : "Please enter a valid email.";
+                let message = getValidationErrorMessage(elementRules, "email");
+                message = message != null ? message : "Please enter a valid email.";
                 inputValidation.validated = false;
                 inputValidation.errors.push(message);
             }
@@ -243,6 +248,83 @@ function validateEmail(htmlInputElement, elementRules) {
     }
 
     return inputValidation;
+}
+
+function validateNumber(htmlInputElement, elementRules) {
+    let errors = [];
+    let validated = true;
+    let inputValue = htmlInputElement.value;
+
+    if(elementRules.properties.required != undefined) {
+        if(elementRules.properties.required) {
+            if(inputValue.length === 0) {
+                validated = false;
+                let message = getValidationErrorMessage(elementRules, "required");
+                message = message != null ? message : "This field is required";
+                errors.push(message);
+            }
+        }
+    }
+
+    if(elementRules.properties.numberType != undefined) {
+        let regexType;
+        switch(elementRules.properties.numberType) {
+            case "int":
+            case "integer"://Integer, checks for positive and negative numbers.
+                regexType = /^[+-]?\d+$/;
+                break;
+            case "float":
+            case "decimal"://Floating point number, checks for dot (.), positive and negative numbers.
+                regexType = /^[+-]?\d+(\.\d+)?$/;
+                break;
+            default://By default, it evaluates to a natural number, doesn't check for negative numbers or floating points.
+                regexType = /^\d+$/;
+                break;
+        }
+        if(!regexType.test(inputValue)) {
+            let message = getValidationErrorMessage(elementRules, "numberType");
+            message = message != null ? message : "The current value is not a(n) " + elementRules.properties.numberType + " number type";
+            validated = false;
+            errors.push(message);
+        }
+    }
+
+    if(elementRules.properties.min != undefined) {
+        let numericVal = parseFloat(inputValue);
+        if(numericVal < elementRules.properties.min) {
+            let message = getValidationErrorMessage(elementRules, "min");
+            message = message != null ? message : "The current value is less than " + elementRules.properties.min;
+            validated = false;
+            errors.push(message);
+        }
+    }
+
+    if(elementRules.properties.max != undefined) {
+        let numericVal = parseFloat(inputValue);
+        if(numericVal > elementRules.properties.max) {
+            let message = getValidationErrorMessage(elementRules, "max");
+            message = message != null ? message : "The current value is greater than " + elementRules.properties.max;
+            validated = false;
+            errors.push(message);
+        }
+    }
+
+    return {
+        "errors": errors,
+        "validated": validated
+    };
+
+}
+
+/**
+ * Method that allows to get the validation error message, in case it's undefined, it'll return null.
+ * @param {Object} elementRules Element rules that are used.
+ * @param {string} key The key to get the error message.
+ */
+function getValidationErrorMessage(elementRules, key) {
+    if(elementRules.messages == undefined) return null;
+    if(elementRules.messages[key] == undefined) return null;
+    return elementRules.messages[key];
 }
 
 /**
