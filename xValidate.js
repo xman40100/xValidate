@@ -70,274 +70,284 @@
  *   }
  */
 
-let xValidateCurrentErrors = [];
-
 /**
- * This method allows the validation of elements using a JSON.
+ * Initialize validation of the form specified in the rules.
  * @param {Object} jsonRules Ruleset that will be used to validate the elements.
- */
-function xValidate(jsonRules) {
-    let correctlyValidated = true;//This variable changes depending if at least one element is not corrected according to the provided rules inside the elements property.
-    let settings = jsonRules.settings;
-    let elements = jsonRules.elements;
+ * @returns {boolean} Returns a check whether the form is valid or not.
+*/
+let xValidate = (() => {
+    /**
+     * This method allows the validation of elements using a JSON.
+     */
+    let validate = (jsonRules) => {
+        let correctlyValidated = true;//This variable changes depending if at least one element is not corrected according to the provided rules inside the elements property.
+        let settings = jsonRules.settings;
+        let elements = jsonRules.elements;
 
-    let errorClass = settings.classError != undefined ? settings.classError : "xValidateError";
-    document.querySelectorAll("." + errorClass).forEach(function(element) {
-        element.remove();
-    });
-
-    if(settings.styleErrorClass != undefined && settings.styleErrorClass !== "xValidateStyleError") {
-        let styledInputs = document.getElementsByClassName(settings.styleErrorClass);
-        for(let i = 0 ; i < styledInputs.length ; i++) {
-            let input = styledInputs.item(i);
-            input.classList.remove(settings.styleErrorClass);
-        }
-    }
-    else {
-        let styledInputs = document.getElementsByClassName("xValidateStyleError");
-        for(let i = 0 ; i < styledInputs.length ; i++) {
-            let input = styledInputs.item(i);
-            input.style.color = "initial";
-            input.style.borderColor = "initial";
-            input.classList.remove(settings.styleErrorClass);
-        }
-    }
-
-    elements.forEach(function(element, index) {
-        if(element.id == undefined && element.class == undefined) {
-            console.error("xValidate error - Error at element of index " + index + ": id or class properties not implemented. Please write the element's class or id.");
-            return false;
-        }
-        if(element.id != undefined && element.class != undefined) {
-            console.error("xValidate error - Error at element of index " + index + ": id and class properties are both implemented. Please remove one of the properties.");
-            return false;
-        }
-
-        let lookupSymbol = element.id != undefined ? element.id : element.class;
-        if(element.id != undefined) {
-            let htmlElement = document.getElementById(lookupSymbol);
-            validateElement(htmlElement, element);
-        }
-        else {
-            let htmlElements = document.getElementsByClassName(lookupSymbol);
-            for(let i = 0 ; i < htmlElements.length ; i++) validateElement(htmlElements.item(i), element);
-        }
-    });
-
-    if(settings.sendOnValidated == undefined) return correctlyValidated;
-
-    if(settings.sendOnValidated) {
-        if(settings.form != undefined ) settings.form.submit();
-        else {
-            let lookup = "";
-            if(elements[0].id != undefined) lookup = "#" + elements[0].id;
-            else lookup = "." + elements[0].class;
-            document.querySelector(lookup).parentElement().submit();
-        }
-    }
-}
-
-/**
- * Internal method of xValidate. styleErrorClass adds the error class for the input fields.
- * @param {HTMLElement} element Element to add the error class.
- * @param {string} errorClass Error class to be added. If it's not provided, then it'll default to xValidate custom inline error CSS.
- * @param {string} validateErrorClass Validation error class to be added. This class is used to indicate later to xValidate to clear all error elements. Default to xValidateError.
- */
-function styleErrorClass(element, validateErrorClass = null) {
-    if(validateErrorClass != null) element.classList.add(validateErrorClass);
-    else {
-        element.classList.add("xValidateStyleError");
-        element.style.color = "red";
-        element.style.borderColor = "red";
-    }
-}
-
-/**
- * Internal method of xValidate. validateElement makes the validation process for the passed element, 
- * redirecting it to other methods used for various types.
- * @param {HTMLInputElement} htmlElement Element to be validated.
- */
-function validateElement(htmlElement, elementRules, errorClass = "xValidateError") {
-    let type = htmlElement.type;
-    let validation = null;
-    let errorMessage = "";
-    switch(type) {
-        case "email":
-            //To validate if the value is an email, use the forceEmailValidation property
-            validation = validateEmail(htmlElement, elementRules);
-            break;
-        case "number":
-            validation = validateNumber(htmlElement, elementRules);
-            break;
-        default:
-            validation = validateInput(htmlElement, elementRules);
-            break;
-    }
-
-    if(validation != null && validation.errors.length !== 0) {
-        validation.errors.forEach(function(error) {
-            errorMessage = errorMessage + error + "<br/>";
+        let errorClass = settings.classError != undefined ? settings.classError : "xValidateError";
+        document.querySelectorAll("." + errorClass).forEach(function(element) {
+            element.remove();
         });
-        createErrorElement(htmlElement, errorMessage, errorClass);
-    }
-}
 
-/**
- * Internal method of xValidate. This is the general input validation.
- * @param {HTMLInputElement} htmlInputElement Element to be validated.
- * @param {Object} elementRules Element rules to be checked.
- */
-function validateInput(htmlInputElement, elementRules) {
-    let validated = true;
-    let errors = [];
+        //We have to delete all the xValidate error elements using their class.
+        if(settings.styleErrorClass != undefined && settings.styleErrorClass !== "xValidateStyleError") {
+            let styledInputs = document.getElementsByClassName(settings.styleErrorClass);
+            for(let i = 0 ; i < styledInputs.length ; i++) {
+                let input = styledInputs.item(i);
+                input.classList.remove(settings.styleErrorClass);
+            }
+        }
+        else {
+            let styledInputs = document.getElementsByClassName("xValidateStyleError");
+            for(let i = 0 ; i < styledInputs.length ; i++) {
+                let input = styledInputs.item(i);
+                input.style.color = "initial";
+                input.style.borderColor = "initial";
+                input.classList.remove(settings.styleErrorClass);
+            }
+        }
 
-    if(elementRules.properties.required != undefined) {
-        if(elementRules.properties.required) {
-            if(htmlInputElement.value.length === 0) {
+        elements.forEach(function(element, index) {
+            if(element.id == undefined && element.class == undefined) {
+                console.error("xValidate error - Error at element of index " + index + ": id or class properties not implemented. Please write the element's class or id.");
+                return false;
+            }
+            if(element.id != undefined && element.class != undefined) {
+                console.error("xValidate error - Error at element of index " + index + ": id and class properties are both implemented. Please remove one of the properties.");
+                return false;
+            }
+
+            let lookupSymbol = element.id != undefined ? element.id : element.class;
+            if(element.id != undefined) {
+                let htmlElement = document.getElementById(lookupSymbol);
+                validateElement(htmlElement, element);
+            }
+            else {
+                let htmlElements = document.getElementsByClassName(lookupSymbol);
+                for(let i = 0 ; i < htmlElements.length ; i++) validateElement(htmlElements.item(i), element);
+            }
+        });
+
+        if(settings.sendOnValidated == undefined) return correctlyValidated;
+
+        if(settings.sendOnValidated) {
+            if(settings.form != undefined) settings.form.submit();
+            else {
+                let lookup = (elements[0].id != undefined) ? ("#" + elements[0].id) : ("." + elements[0].class);
+                document.querySelector(lookup).parentElement().submit();
+            }
+        }
+    };
+
+    /**
+     * Internal method of xValidate. styleErrorClass adds the error class for the input fields.
+     * @param {HTMLElement} element Element to add the error class.
+     * @param {string} errorClass Error class to be added. If it's not provided, then it'll default to xValidate custom inline error CSS.
+     * @param {string} validateErrorClass Validation error class to be added. This class is used to indicate later to xValidate to clear all error elements. Default to xValidateError.
+     */
+    let styleErrorClass = (element, validateErrorClass = null) => {
+        if(validateErrorClass != null) element.classList.add(validateErrorClass);
+        else {
+            element.classList.add("xValidateStyleError");
+            element.style.color = "red";
+            element.style.borderColor = "red";
+        }
+    };
+
+    /**
+     * Internal method of xValidate. validateElement makes the validation process for the passed element, 
+     * redirecting it to other methods used for various types.
+     * @param {HTMLInputElement} htmlElement Element to be validated.
+     */
+    let validateElement = (htmlElement, elementRules, errorClass = "xValidateError") => {
+        let type = htmlElement.type;
+        let validation = null;
+        let errorMessage = "";
+        switch(type) {
+            case "email":
+                //To validate if the value is an email, use the forceEmailValidation property
+                validation = validateEmail(htmlElement, elementRules);
+                break;
+            case "number":
+                validation = validateNumber(htmlElement, elementRules);
+                break;
+            default:
+                validation = validateInput(htmlElement, elementRules);
+                break;
+        }
+
+        if(validation != null && validation.errors.length !== 0) {
+            validation.errors.forEach(function(error) {
+                errorMessage = errorMessage + error + "<br/>";
+            });
+            createErrorElement(htmlElement, errorMessage, errorClass);
+        }
+    };
+
+    /**
+     * Internal method of xValidate. This is the general input validation.
+     * @param {HTMLInputElement} htmlInputElement Element to be validated.
+     * @param {Object} elementRules Element rules to be checked.
+     */
+    let validateInput = (htmlInputElement, elementRules) => {
+        let validated = true;
+        let errors = [];
+
+        if(elementRules.properties.required != undefined) {
+            if(elementRules.properties.required) {
+                if(htmlInputElement.value.length === 0) {
+                    validated = false;
+                    let message = getValidationErrorMessage(elementRules, "required");
+                    message = message != null ? message : "This field is required";
+                    errors.push(message);
+                }
+            }
+        }
+
+        if(elementRules.properties.maxlength != undefined) {
+            if(htmlInputElement.value.length > elementRules.properties.maxlength) {
                 validated = false;
-                let message = getValidationErrorMessage(elementRules, "required");
-                message = message != null ? message : "This field is required";
+                let message = getValidationErrorMessage(elementRules, "min");
+                message = message != null ? message : "This field has reached the " + elementRules.properties.maxlength + " character limit.";
                 errors.push(message);
             }
         }
-    }
 
-    if(elementRules.properties.maxlength != undefined) {
-        if(htmlInputElement.value.length > elementRules.properties.maxlength) {
-            validated = false;
-            let message = getValidationErrorMessage(elementRules, "min");
-            message = message != null ? message : "This field has reached the " + elementRules.properties.maxlength + " character limit.";
-            errors.push(message);
-        }
-    }
-
-    if(elementRules.properties.minlength != undefined) {
-        if(htmlInputElement.value.length < elementRules.properties.minlength) {
-            validated = false;
-            let message = getValidationErrorMessage(elementRules, "minlength");
-            message = message != null ? message : "This field has not reached the " + elementRules.properties.minlength + " minimum character(s).";
-            errors.push(message);
-        }
-    }
-
-    return {
-        "validated": validated,
-        "errors": errors
-    };
-}
-
-/**
- * 
- * @param {HTMLInputElement} htmlInputElement The HTML Element that will be validated.
- * @param {OBject} elementRules Element rules.
- */
-function validateEmail(htmlInputElement, elementRules) {
-    let inputValidation = validateInput(htmlInputElement, elementRules);
-    let currentVal = htmlInputElement.value;
-
-    if(elementRules.properties.forceEmailValidation != undefined) {
-        if(elementRules.properties.forceEmailValidation) {
-            //Credit to https://emailregex.com/
-            if(!currentVal.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-                let message = getValidationErrorMessage(elementRules, "email");
-                message = message != null ? message : "Please enter a valid email.";
-                inputValidation.validated = false;
-                inputValidation.errors.push(message);
-            }
-        }
-    }
-
-    return inputValidation;
-}
-
-function validateNumber(htmlInputElement, elementRules) {
-    let errors = [];
-    let validated = true;
-    let inputValue = htmlInputElement.value;
-
-    if(elementRules.properties.required != undefined) {
-        if(elementRules.properties.required) {
-            if(inputValue.length === 0) {
+        if(elementRules.properties.minlength != undefined) {
+            if(htmlInputElement.value.length < elementRules.properties.minlength) {
                 validated = false;
-                let message = getValidationErrorMessage(elementRules, "required");
-                message = message != null ? message : "This field is required";
+                let message = getValidationErrorMessage(elementRules, "minlength");
+                message = message != null ? message : "This field has not reached the " + elementRules.properties.minlength + " minimum character(s).";
                 errors.push(message);
             }
         }
-    }
 
-    if(elementRules.properties.numberType != undefined) {
-        let regexType;
-        switch(elementRules.properties.numberType) {
-            case "int":
-            case "integer"://Integer, checks for positive and negative numbers.
-                regexType = /^[+-]?\d+$/;
-                break;
-            case "float":
-            case "decimal"://Floating point number, checks for dot (.), positive and negative numbers.
-                regexType = /^[+-]?\d+(\.\d+)?$/;
-                break;
-            default://By default, it evaluates to a natural number, doesn't check for negative numbers or floating points.
-                regexType = /^\d+$/;
-                break;
-        }
-        if(!regexType.test(inputValue)) {
-            let message = getValidationErrorMessage(elementRules, "numberType");
-            message = message != null ? message : "The current value is not a(n) " + elementRules.properties.numberType + " number type";
-            validated = false;
-            errors.push(message);
-        }
-    }
-
-    if(elementRules.properties.min != undefined) {
-        let numericVal = parseFloat(inputValue);
-        if(numericVal < elementRules.properties.min) {
-            let message = getValidationErrorMessage(elementRules, "min");
-            message = message != null ? message : "The current value is less than " + elementRules.properties.min;
-            validated = false;
-            errors.push(message);
-        }
-    }
-
-    if(elementRules.properties.max != undefined) {
-        let numericVal = parseFloat(inputValue);
-        if(numericVal > elementRules.properties.max) {
-            let message = getValidationErrorMessage(elementRules, "max");
-            message = message != null ? message : "The current value is greater than " + elementRules.properties.max;
-            validated = false;
-            errors.push(message);
-        }
-    }
-
-    return {
-        "errors": errors,
-        "validated": validated
+        return {
+            "validated": validated,
+            "errors": errors
+        };
     };
 
-}
+    /**
+     * 
+     * @param {HTMLInputElement} htmlInputElement The HTML Element that will be validated.
+     * @param {OBject} elementRules Element rules.
+     */
+    let validateEmail = (htmlInputElement, elementRules) => {
+        let inputValidation = validateInput(htmlInputElement, elementRules);
+        let currentVal = htmlInputElement.value;
 
-/**
- * Method that allows to get the validation error message, in case it's undefined, it'll return null.
- * @param {Object} elementRules Element rules that are used.
- * @param {string} key The key to get the error message.
- */
-function getValidationErrorMessage(elementRules, key) {
-    if(elementRules.messages == undefined) return null;
-    if(elementRules.messages[key] == undefined) return null;
-    return elementRules.messages[key];
-}
+        if(elementRules.properties.forceEmailValidation != undefined) {
+            if(elementRules.properties.forceEmailValidation) {
+                //Credit to https://emailregex.com/
+                if(!currentVal.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+                    let message = getValidationErrorMessage(elementRules, "email");
+                    message = message != null ? message : "Please enter a valid email.";
+                    inputValidation.validated = false;
+                    inputValidation.errors.push(message);
+                }
+            }
+        }
 
-/**
- * Internal method that will create an error element and style the html element that will be passed.
- * @param {HTMLInputElement} htmlInputElement HTML element that the error element will be appended to.
- * @param {string} message Message that will be appended.
- * @param {string} errorClass The error class that xValidate will use to later remove.
- * @param {string} htmlErrorClass The error class that will be added to the input element. If not defined, it'll default to inline styling.
- */
-function createErrorElement(htmlInputElement, message, errorClass, htmlErrorClass = null) {
-    let errorElement = document.createElement("span");
-    errorElement.classList.add(errorClass);
-    errorElement.innerHTML = message;
-    styleErrorClass(htmlInputElement, htmlErrorClass);
-    htmlInputElement.parentElement.appendChild(errorElement);
-}
+        return inputValidation;
+    };
+
+    let validateNumber = (htmlInputElement, elementRules) => {
+        let errors = [];
+        let validated = true;
+        let inputValue = htmlInputElement.value;
+    
+        if(elementRules.properties.required != undefined) {
+            if(elementRules.properties.required) {
+                if(inputValue.length === 0) {
+                    validated = false;
+                    let message = getValidationErrorMessage(elementRules, "required");
+                    message = message != null ? message : "This field is required";
+                    errors.push(message);
+                }
+            }
+        }
+    
+        if(elementRules.properties.numberType != undefined) {
+            let regexType;
+            switch(elementRules.properties.numberType) {
+                case "int":
+                case "integer"://Integer, checks for positive and negative numbers.
+                    regexType = /^[+-]?\d+$/;
+                    break;
+                case "float":
+                case "decimal"://Floating point number, checks for dot (.), positive and negative numbers.
+                    regexType = /^[+-]?\d+(\.\d+)?$/;
+                    break;
+                default://By default, it evaluates to a natural number, doesn't check for negative numbers or floating points.
+                    regexType = /^\d+$/;
+                    break;
+            }
+            if(!regexType.test(inputValue)) {
+                let message = getValidationErrorMessage(elementRules, "numberType");
+                message = message != null ? message : "The current value is not a(n) " + elementRules.properties.numberType + " number type";
+                validated = false;
+                errors.push(message);
+            }
+        }
+    
+        if(elementRules.properties.min != undefined) {
+            let numericVal = parseFloat(inputValue);
+            if(numericVal < elementRules.properties.min) {
+                let message = getValidationErrorMessage(elementRules, "min");
+                message = message != null ? message : "The current value is less than " + elementRules.properties.min;
+                validated = false;
+                errors.push(message);
+            }
+        }
+    
+        if(elementRules.properties.max != undefined) {
+            let numericVal = parseFloat(inputValue);
+            if(numericVal > elementRules.properties.max) {
+                let message = getValidationErrorMessage(elementRules, "max");
+                message = message != null ? message : "The current value is greater than " + elementRules.properties.max;
+                validated = false;
+                errors.push(message);
+            }
+        }
+    
+        return {
+            "errors": errors,
+            "validated": validated
+        };
+    
+    };
+
+    /**
+     * Method that allows to get the validation error message, in case it's undefined, it'll return null.
+     * @param {Object} elementRules Element rules that are used.
+     * @param {string} key The key to get the error message.
+     */
+    let getValidationErrorMessage = (elementRules, key) => {
+        if(elementRules.messages == undefined) return null;
+        if(elementRules.messages[key] == undefined) return null;
+        return elementRules.messages[key];
+    };
+
+    /**
+     * Internal method that will create an error element and style the html element that will be passed.
+     * @param {HTMLInputElement} htmlInputElement HTML element that the error element will be appended to.
+     * @param {string} message Message that will be appended.
+     * @param {string} errorClass The error class that xValidate will use to later remove.
+     * @param {string} htmlErrorClass The error class that will be added to the input element. If not defined, it'll default to inline styling.
+     */
+    let createErrorElement = (htmlInputElement, message, errorClass, htmlErrorClass = null) => {
+        let errorElement = document.createElement("span");
+        errorElement.classList.add(errorClass);
+        errorElement.innerHTML = message;
+        styleErrorClass(htmlInputElement, htmlErrorClass);
+        htmlInputElement.parentElement.appendChild(errorElement);
+    };
+
+    return {
+        "init": (jsonRules) => {
+            validate(jsonRules);
+        }
+    };
+    
+})();

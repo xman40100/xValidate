@@ -1,4 +1,4 @@
-# xValidate 0.2.1
+# xValidate 0.3
 ```html
 <script src = "xValidate.min.js"></script>
 ```
@@ -85,7 +85,7 @@ in case you don't want to write the messages, and will use the properties to wri
 ### xValidate function
 ```javascript
 
-xValidate(jsonRules);
+xValidate.init(jsonRules);
 
 ```
 

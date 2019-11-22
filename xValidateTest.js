@@ -48,6 +48,6 @@ let jsonObject = {
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("testButton").addEventListener("click", () => {
-        new xValidate(jsonObject);
+        xValidate.init(jsonObject);
     });
 });
