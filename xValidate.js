@@ -1,6 +1,6 @@
 "use strict";
 /*
- * ----------------------------- xValidate 0.2.1 -------------------------------------------
+ * ----------------------------- xValidate 0.3 -------------------------------------------
  * This is xValidate: xValidate is a native JavaScript validation, the main premise of this
  * script file is to make it easy for the developers to validate input fields.
  * Another point is to keep it simple. No need to make a huge dependency or something, just
