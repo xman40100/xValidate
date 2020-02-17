@@ -5,7 +5,8 @@
   "main": "xValidate.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "babel ./xValidate.js -d ../dist"
+    "build": "babel ./xValidate.js -d ../dist",
+    "minify": "uglifyjs --compress ./xValidate.js -o ./dist/xValidate.min.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,6 @@
     "@babel/core": "^7.8.4",
     "@babel/cli": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
-    "babel-minify": "^0.5.1"
+    "uglify-js": "^3.7.7"
   }
 }
