@@ -6,6 +6,7 @@
   "presets": [
     [
       "@babel/env",
+      "@babel/minify",
       {
         "targets": {
           "ie": "8",
