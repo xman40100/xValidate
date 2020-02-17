@@ -13,8 +13,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
           - name: Downloading current version of Node.js...
-            run: apt-get install -y node
+            run: sudo apt-get install -y node
           - name: Installing Babel
-            run: npm install --save-dev @babel/core @babel/cli @babel/preset-env
+            run: sudo npm install --save-dev @babel/core @babel/cli @babel/preset-env
           - name: Running build using preset.
             run: ./node_modules/.bin/babel ./src --out-dir ./dist
