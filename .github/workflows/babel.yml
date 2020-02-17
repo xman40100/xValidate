@@ -17,12 +17,16 @@ jobs:
           - name: Downloading current version of Node.js...
             run: sudo apt-get install -y nodejs
 
-          - name: Installing Babel and getting config...
+          - name: Installing Babel and dependencies and getting config...
             run: npm install
             working-directory: src
 
           - name: Get Babel config and run build
             run: npm run build
+            working-directory: src
+
+          - name: Running minifier...
+            run: minify ./dist/xValidate.js --out-file ./dist/xValidate.min.js
             working-directory: src
 
           - name: Saving build output to dist folder...
