@@ -5,7 +5,7 @@
   "main": "xValidate.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "babel ./src/xValidate.js -d dist"
+    "build": "babel ./xValidate.js -d ../dist"
   },
   "repository": {
     "type": "git",

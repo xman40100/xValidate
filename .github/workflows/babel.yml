@@ -15,11 +15,10 @@ jobs:
           - name: Downloading current version of Node.js...
             run: sudo apt-get install -y nodejs
           - name: Installing Babel and getting config...
-            uses: ./package.json
+            working-directory: src
             run: npm install
           - name: Get Babel config and run build
-            uses: ./babel.config.json
-            uses: ./src/
+            working-directory: src
             run: npm run build
           - name: Saving build output to dist folder...
             uses: actions/upload-artifact@v1
