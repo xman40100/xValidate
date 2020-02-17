@@ -13,8 +13,13 @@ jobs:
         runs-on: ubuntu-latest
         steps:
           - name: Downloading current version of Node.js...
-            run: sudo apt-get install -y node
+            run: sudo apt-get install -y nodejs
           - name: Installing Babel
             run: sudo npm install --save-dev @babel/core @babel/cli @babel/preset-env
           - name: Running build using preset.
             run: ./node_modules/.bin/babel ./src --out-dir ./dist
+          - name: Saving build output to dist folder...
+            uses: actions/upload-artifact@v1
+            with:
+                name: dist
+                path: dist
