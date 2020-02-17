@@ -1,0 +1,25 @@
+{
+  "name": "xvalidate",
+  "version": "0.3.0",
+  "description": "A simple JavaScript validation function.",
+  "main": "xValidate.min.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel ./src/xValidate.js -d dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xman40100/xvalidate.git"
+  },
+  "author": "xman40100",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xman40100/xvalidate/issues"
+  },
+  "homepage": "https://github.com/xman40100/xvalidate#readme",
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/cli": "^7.8.4",
+    "@babel/preset-env": "^7.8.4"
+  }
+}
