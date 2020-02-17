@@ -1,7 +1,11 @@
 name: Create xValidate for older browsers...
-on: [push]
-branches:
-    - actions
+on:
+    push:
+        branches:
+            - actions
+    pull_request:
+        branches:
+            - actions
 
 jobs:
     build:
