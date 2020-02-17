@@ -1,7 +1,7 @@
 {
   "plugins": [
-      "transform-arrow-functions",
-      "transform-classes"
+      "@babel/transform-arrow-functions",
+      "@babel/transform-classes"
   ],
   "presets": [
     [
