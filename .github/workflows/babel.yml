@@ -1,0 +1,36 @@
+name: Create xValidate for older browsers...
+on:
+    push:
+        branches:
+            - actions
+    pull_request:
+        branches:
+            - actions
+
+jobs:
+    build:
+        name: Creating Babel build...
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+
+          - name: Downloading current version of Node.js...
+            run: sudo apt-get install -y nodejs
+
+          - name: Installing Babel, UglifyJS, its dependencies and getting config...
+            run: npm install
+            working-directory: src
+
+          - name: Run Babel build
+            run: npm run build
+            working-directory: src
+
+          - name: Running minifier...
+            run: npm run minify
+            working-directory: src
+
+          - name: Saving build output to dist folder...
+            uses: actions/upload-artifact@v1
+            with:
+                name: Build results
+                path: dist

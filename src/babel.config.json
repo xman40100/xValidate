@@ -1,0 +1,18 @@
+{
+  "plugins": [
+      "@babel/transform-arrow-functions",
+      "@babel/transform-classes"
+  ],
+  "presets": [
+    [
+      "@babel/env",
+      {
+        "targets": {
+          "ie": "8",
+          "safari": "4"
+        },
+        "useBuiltIns": "usage" 
+      }
+    ]
+  ]
+}
